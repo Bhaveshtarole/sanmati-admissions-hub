@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { Users, Flame, GraduationCap, TrendingUp } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import { mockStats, mockStudents } from "@/data/mockData";
@@ -37,22 +37,12 @@ const Dashboard = () => {
     color: STATUS_COLORS[key] || "#666",
   }));
 
-  const BRANCH_COLORS = [
-    "hsl(200, 80%, 44%)", "hsl(142, 71%, 45%)", "hsl(45, 93%, 47%)",
-    "hsl(262, 83%, 58%)", "hsl(0, 72%, 51%)", "hsl(180, 60%, 40%)",
-  ];
-
   const courseMap: Record<string, number> = {};
   mockStudents.forEach((s) => {
     const c = s.course_interest || "Unknown";
     courseMap[c] = (courseMap[c] || 0) + 1;
   });
-  
-  const branchPieData = Object.entries(courseMap).map(([name, count], i) => ({
-    name,
-    count,
-    color: BRANCH_COLORS[i % BRANCH_COLORS.length],
-  }));
+  const barData = Object.entries(courseMap).map(([name, count]) => ({ name, count }));
 
   return (
     <div className="space-y-8">
@@ -78,8 +68,8 @@ const Dashboard = () => {
                   data={pieData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={50}
-                  outerRadius={85}
+                  innerRadius={60}
+                  outerRadius={95}
                   paddingAngle={3}
                   dataKey="value"
                   strokeWidth={0}
@@ -111,24 +101,13 @@ const Dashboard = () => {
         </div>
 
         <div className="glass-card p-6 opacity-0 animate-fade-up" style={{ animationDelay: "400ms", animationFillMode: "forwards" }}>
-          <h2 className="text-sm font-semibold font-display text-foreground mb-4 uppercase tracking-wider">Students by Branch</h2>
+          <h2 className="text-sm font-semibold font-display text-foreground mb-4 uppercase tracking-wider">Students per Branch</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={branchPieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={85}
-                  paddingAngle={3}
-                  dataKey="count"
-                  strokeWidth={0}
-                >
-                  {branchPieData.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} />
-                  ))}
-                </Pie>
+              <BarChart data={barData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+                <XAxis dataKey="name" tick={{ fill: "hsl(220, 9%, 46%)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "hsl(220, 9%, 46%)", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{
                     background: "hsl(0, 0%, 100%)",
@@ -138,19 +117,17 @@ const Dashboard = () => {
                     fontSize: "12px",
                   }}
                 />
-              </PieChart>
+                <Bar dataKey="count" fill="url(#barGradient)" radius={[6, 6, 0, 0]} />
+                <defs>
+                  <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(200, 80%, 44%)" />
+                    <stop offset="100%" stopColor="hsl(220, 70%, 50%)" />
+                  </linearGradient>
+                </defs>
+              </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-2 flex flex-wrap gap-3 justify-center">
-            {branchPieData.map((d) => (
-              <div key={d.name} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: d.color }} />
-                {d.name} ({d.count})
-              </div>
-            ))}
-          </div>
         </div>
-
       </div>
     </div>
   );
