@@ -151,34 +151,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="glass-card p-6 opacity-0 animate-fade-up" style={{ animationDelay: "500ms", animationFillMode: "forwards" }}>
-          <h2 className="text-sm font-semibold font-display text-foreground mb-4 uppercase tracking-wider">Students per Branch</h2>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={barData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
-                <XAxis dataKey="name" tick={{ fill: "hsl(220, 9%, 46%)", fontSize: 10 }} axisLine={false} tickLine={false} angle={-25} textAnchor="end" height={50} />
-                <YAxis tick={{ fill: "hsl(220, 9%, 46%)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(0, 0%, 100%)",
-                    border: "1px solid hsl(220, 13%, 91%)",
-                    borderRadius: "8px",
-                    color: "hsl(220, 15%, 15%)",
-                    fontSize: "12px",
-                  }}
-                />
-                <Bar dataKey="count" fill="url(#barGradient)" radius={[6, 6, 0, 0]} />
-                <defs>
-                  <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(200, 80%, 44%)" />
-                    <stop offset="100%" stopColor="hsl(220, 70%, 50%)" />
-                  </linearGradient>
-                </defs>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
       </div>
     </div>
   );
