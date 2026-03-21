@@ -68,35 +68,16 @@ const Dashboard = () => {
         <StatCard title="Avg Score" value={stats.avg_score} icon={<TrendingUp className="h-5 w-5" />} delay={240} />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="glass-card p-6 opacity-0 animate-fade-up" style={{ animationDelay: "300ms", animationFillMode: "forwards" }}>
           <h2 className="text-sm font-semibold font-display text-foreground mb-4 uppercase tracking-wider">Lead Status Breakdown</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={85}
-                  paddingAngle={3}
-                  dataKey="value"
-                  strokeWidth={0}
-                >
-                  {pieData.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} />
-                  ))}
+                <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={95} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                  {pieData.map((entry, i) => (<Cell key={i} fill={entry.color} />))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(0, 0%, 100%)",
-                    border: "1px solid hsl(220, 13%, 91%)",
-                    borderRadius: "8px",
-                    color: "hsl(220, 15%, 15%)",
-                    fontSize: "12px",
-                  }}
-                />
+                <Tooltip contentStyle={{ background: "hsl(0, 0%, 100%)", border: "1px solid hsl(220, 13%, 91%)", borderRadius: "8px", color: "hsl(220, 15%, 15%)", fontSize: "12px" }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -115,29 +96,10 @@ const Dashboard = () => {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie
-                  data={branchPieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={85}
-                  paddingAngle={3}
-                  dataKey="count"
-                  strokeWidth={0}
-                >
-                  {branchPieData.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} />
-                  ))}
+                <Pie data={branchPieData} cx="50%" cy="50%" innerRadius={60} outerRadius={95} paddingAngle={3} dataKey="count" strokeWidth={0}>
+                  {branchPieData.map((entry, i) => (<Cell key={i} fill={entry.color} />))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(0, 0%, 100%)",
-                    border: "1px solid hsl(220, 13%, 91%)",
-                    borderRadius: "8px",
-                    color: "hsl(220, 15%, 15%)",
-                    fontSize: "12px",
-                  }}
-                />
+                <Tooltip contentStyle={{ background: "hsl(0, 0%, 100%)", border: "1px solid hsl(220, 13%, 91%)", borderRadius: "8px", color: "hsl(220, 15%, 15%)", fontSize: "12px" }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -148,35 +110,6 @@ const Dashboard = () => {
                 {d.name} ({d.count})
               </div>
             ))}
-          </div>
-        </div>
-
-        <div className="glass-card p-6 opacity-0 animate-fade-up" style={{ animationDelay: "500ms", animationFillMode: "forwards" }}>
-          <h2 className="text-sm font-semibold font-display text-foreground mb-4 uppercase tracking-wider">Students per Branch</h2>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={barData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
-                <XAxis dataKey="name" tick={{ fill: "hsl(220, 9%, 46%)", fontSize: 10 }} axisLine={false} tickLine={false} angle={-25} textAnchor="end" height={50} />
-                <YAxis tick={{ fill: "hsl(220, 9%, 46%)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(0, 0%, 100%)",
-                    border: "1px solid hsl(220, 13%, 91%)",
-                    borderRadius: "8px",
-                    color: "hsl(220, 15%, 15%)",
-                    fontSize: "12px",
-                  }}
-                />
-                <Bar dataKey="count" fill="url(#barGradient)" radius={[6, 6, 0, 0]} />
-                <defs>
-                  <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(200, 80%, 44%)" />
-                    <stop offset="100%" stopColor="hsl(220, 70%, 50%)" />
-                  </linearGradient>
-                </defs>
-              </BarChart>
-            </ResponsiveContainer>
           </div>
         </div>
       </div>
