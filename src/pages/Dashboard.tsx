@@ -37,12 +37,22 @@ const Dashboard = () => {
     color: STATUS_COLORS[key] || "#666",
   }));
 
+  const BRANCH_COLORS = [
+    "hsl(200, 80%, 44%)", "hsl(142, 71%, 45%)", "hsl(45, 93%, 47%)",
+    "hsl(262, 83%, 58%)", "hsl(0, 72%, 51%)", "hsl(180, 60%, 40%)",
+  ];
+
   const courseMap: Record<string, number> = {};
   mockStudents.forEach((s) => {
     const c = s.course_interest || "Unknown";
     courseMap[c] = (courseMap[c] || 0) + 1;
   });
   const barData = Object.entries(courseMap).map(([name, count]) => ({ name, count }));
+  const branchPieData = Object.entries(courseMap).map(([name, count], i) => ({
+    name,
+    count,
+    color: BRANCH_COLORS[i % BRANCH_COLORS.length],
+  }));
 
   return (
     <div className="space-y-8">
