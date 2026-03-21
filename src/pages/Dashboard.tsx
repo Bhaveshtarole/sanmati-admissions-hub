@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { Users, Flame, GraduationCap, TrendingUp } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import { mockStats, mockStudents } from "@/data/mockData";
@@ -37,12 +37,26 @@ const Dashboard = () => {
     color: STATUS_COLORS[key] || "#666",
   }));
 
+  const BRANCH_COLORS: Record<string, string> = {
+    "Computer Science": "hsl(200, 80%, 44%)",
+    "Mechanical": "hsl(25, 85%, 50%)",
+    "Civil": "hsl(142, 60%, 42%)",
+    "Electrical": "hsl(45, 90%, 48%)",
+    "Electronics & Comm.": "hsl(262, 70%, 55%)",
+    "Information Technology": "hsl(330, 65%, 50%)",
+  };
+
   const courseMap: Record<string, number> = {};
   mockStudents.forEach((s) => {
     const c = s.course_interest || "Unknown";
     courseMap[c] = (courseMap[c] || 0) + 1;
   });
   const barData = Object.entries(courseMap).map(([name, count]) => ({ name, count }));
+  const branchPieData = Object.entries(courseMap).map(([name, count]) => ({
+    name,
+    value: count,
+    color: BRANCH_COLORS[name] || "hsl(220, 9%, 46%)",
+  }));
 
   return (
     <div className="space-y-8">
@@ -126,6 +140,61 @@ const Dashboard = () => {
                 </defs>
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Branch breakdown donut */}
+      <div className="glass-card p-6 opacity-0 animate-fade-up" style={{ animationDelay: "500ms", animationFillMode: "forwards" }}>
+        <h2 className="text-sm font-semibold font-display text-foreground mb-4 uppercase tracking-wider">Branch-wise Distribution</h2>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 items-center">
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={branchPieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={90}
+                  paddingAngle={2}
+                  dataKey="value"
+                  strokeWidth={0}
+                >
+                  {branchPieData.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(0, 0%, 100%)",
+                    border: "1px solid hsl(220, 13%, 91%)",
+                    borderRadius: "8px",
+                    color: "hsl(220, 15%, 15%)",
+                    fontSize: "12px",
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="space-y-3">
+            {branchPieData.map((d) => {
+              const pct = ((d.value / mockStudents.length) * 100).toFixed(0);
+              return (
+                <div key={d.name} className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="h-3 w-3 rounded-sm shrink-0" style={{ background: d.color }} />
+                    <span className="text-sm text-foreground truncate">{d.name}</span>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="w-24 h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: d.color }} />
+                    </div>
+                    <span className="text-xs font-medium text-muted-foreground tabular-nums w-8 text-right">{pct}%</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
