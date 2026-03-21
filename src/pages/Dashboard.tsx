@@ -47,7 +47,6 @@ const Dashboard = () => {
     const c = s.course_interest || "Unknown";
     courseMap[c] = (courseMap[c] || 0) + 1;
   });
-  const barData = Object.entries(courseMap).map(([name, count]) => ({ name, count }));
   const branchPieData = Object.entries(courseMap).map(([name, count], i) => ({
     name,
     count,
