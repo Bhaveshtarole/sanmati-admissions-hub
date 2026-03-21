@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { Users, Flame, GraduationCap, TrendingUp } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import { mockStats, mockStudents } from "@/data/mockData";
