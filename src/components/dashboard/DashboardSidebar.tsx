@@ -1,9 +1,13 @@
 import { NavLink as RouterNavLink } from "react-router-dom";
-import { LayoutDashboard, Users, GraduationCap } from "lucide-react";
+import { LayoutDashboard, Users, GraduationCap, UserPlus, Send, BarChart3, Settings } from "lucide-react";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/leads", label: "Leads", icon: Users },
+  { to: "/students", label: "Students", icon: UserPlus },
+  { to: "/campaigns", label: "Campaign Manager", icon: Send },
+  { to: "/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/settings", label: "Settings", icon: Settings },
 ];
 
 const DashboardSidebar = () => {
