@@ -1,0 +1,142 @@
+import { useEffect, useState } from "react";
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { Users, Flame, GraduationCap, TrendingUp } from "lucide-react";
+import StatCard from "@/components/dashboard/StatCard";
+import { mockStats, mockStudents } from "@/data/mockData";
+import type { Stats } from "@/api/client";
+
+const STATUS_COLORS: Record<string, string> = {
+  new: "hsl(217, 91%, 60%)",
+  in_progress: "hsl(45, 93%, 47%)",
+  visit_scheduled: "hsl(262, 83%, 58%)",
+  admitted: "hsl(142, 71%, 45%)",
+  not_interested: "hsl(0, 0%, 45%)",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  new: "New",
+  in_progress: "In Progress",
+  visit_scheduled: "Visit Scheduled",
+  admitted: "Admitted",
+  not_interested: "Not Interested",
+};
+
+const Dashboard = () => {
+  const [stats, setStats] = useState<Stats>(mockStats);
+
+  // Try fetching from API, fall back to mock
+  useEffect(() => {
+    fetch("/api/stats")
+      .then((r) => r.ok ? r.json() : Promise.reject())
+      .then(setStats)
+      .catch(() => setStats(mockStats));
+  }, []);
+
+  const pieData = Object.entries(stats.status_breakdown).map(([key, value]) => ({
+    name: STATUS_LABELS[key] || key,
+    value,
+    color: STATUS_COLORS[key] || "#666",
+  }));
+
+  // Course distribution from students
+  const courseMap: Record<string, number> = {};
+  mockStudents.forEach((s) => {
+    const c = s.course_interest || "Unknown";
+    courseMap[c] = (courseMap[c] || 0) + 1;
+  });
+  const barData = Object.entries(courseMap).map(([name, count]) => ({ name, count }));
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold font-display text-foreground text-balance">Dashboard</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Admission pipeline overview</p>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard title="Total Leads" value={stats.total_leads} icon={<Users className="h-5 w-5" />} delay={0} />
+        <StatCard title="Hot Leads" value={stats.hot_leads} icon={<Flame className="h-5 w-5" />} delay={80} />
+        <StatCard title="Admitted" value={stats.admitted} icon={<GraduationCap className="h-5 w-5" />} delay={160} />
+        <StatCard title="Avg Score" value={stats.avg_score} icon={<TrendingUp className="h-5 w-5" />} delay={240} />
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Donut */}
+        <div className="glass-card p-6 opacity-0 animate-fade-up" style={{ animationDelay: "300ms", animationFillMode: "forwards" }}>
+          <h2 className="text-sm font-semibold font-display text-foreground mb-4 uppercase tracking-wider">Lead Status Breakdown</h2>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={95}
+                  paddingAngle={3}
+                  dataKey="value"
+                  strokeWidth={0}
+                >
+                  {pieData.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(215, 25%, 12%)",
+                    border: "1px solid hsl(215, 20%, 20%)",
+                    borderRadius: "8px",
+                    color: "hsl(210, 20%, 90%)",
+                    fontSize: "12px",
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-3 justify-center">
+            {pieData.map((d) => (
+              <div key={d.name} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: d.color }} />
+                {d.name} ({d.value})
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bar chart */}
+        <div className="glass-card p-6 opacity-0 animate-fade-up" style={{ animationDelay: "400ms", animationFillMode: "forwards" }}>
+          <h2 className="text-sm font-semibold font-display text-foreground mb-4 uppercase tracking-wider">Students per Course</h2>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={barData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(215, 20%, 18%)" />
+                <XAxis dataKey="name" tick={{ fill: "hsl(215, 12%, 50%)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "hsl(215, 12%, 50%)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(215, 25%, 12%)",
+                    border: "1px solid hsl(215, 20%, 20%)",
+                    borderRadius: "8px",
+                    color: "hsl(210, 20%, 90%)",
+                    fontSize: "12px",
+                  }}
+                />
+                <Bar dataKey="count" fill="url(#barGradient)" radius={[6, 6, 0, 0]} />
+                <defs>
+                  <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(174, 72%, 46%)" />
+                    <stop offset="100%" stopColor="hsl(217, 91%, 60%)" />
+                  </linearGradient>
+                </defs>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
