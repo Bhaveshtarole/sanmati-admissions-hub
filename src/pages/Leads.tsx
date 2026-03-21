@@ -15,7 +15,7 @@ const statuses = [
   { value: "not_interested", label: "Not Interested" },
 ];
 
-const courses = ["", "BCA", "BBA", "B.Com", "BSc IT", "MCA", "MBA"];
+const courses = ["", "Computer Science", "Mechanical", "Civil", "Electrical", "Electronics & Comm.", "Information Technology"];
 
 const Leads = () => {
   const [search, setSearch] = useState("");

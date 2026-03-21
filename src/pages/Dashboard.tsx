@@ -24,7 +24,6 @@ const STATUS_LABELS: Record<string, string> = {
 const Dashboard = () => {
   const [stats, setStats] = useState<Stats>(mockStats);
 
-  // Try fetching from API, fall back to mock
   useEffect(() => {
     fetch("/api/stats")
       .then((r) => r.ok ? r.json() : Promise.reject())
@@ -38,7 +37,6 @@ const Dashboard = () => {
     color: STATUS_COLORS[key] || "#666",
   }));
 
-  // Course distribution from students
   const courseMap: Record<string, number> = {};
   mockStudents.forEach((s) => {
     const c = s.course_interest || "Unknown";
@@ -53,7 +51,6 @@ const Dashboard = () => {
         <p className="mt-1 text-sm text-muted-foreground">Admission pipeline overview</p>
       </div>
 
-      {/* Stat cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Total Leads" value={stats.total_leads} icon={<Users className="h-5 w-5" />} delay={0} />
         <StatCard title="Hot Leads" value={stats.hot_leads} icon={<Flame className="h-5 w-5" />} delay={80} />
@@ -61,9 +58,7 @@ const Dashboard = () => {
         <StatCard title="Avg Score" value={stats.avg_score} icon={<TrendingUp className="h-5 w-5" />} delay={240} />
       </div>
 
-      {/* Charts */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Donut */}
         <div className="glass-card p-6 opacity-0 animate-fade-up" style={{ animationDelay: "300ms", animationFillMode: "forwards" }}>
           <h2 className="text-sm font-semibold font-display text-foreground mb-4 uppercase tracking-wider">Lead Status Breakdown</h2>
           <div className="h-64">
@@ -85,10 +80,10 @@ const Dashboard = () => {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    background: "hsl(215, 25%, 12%)",
-                    border: "1px solid hsl(215, 20%, 20%)",
+                    background: "hsl(0, 0%, 100%)",
+                    border: "1px solid hsl(220, 13%, 91%)",
                     borderRadius: "8px",
-                    color: "hsl(210, 20%, 90%)",
+                    color: "hsl(220, 15%, 15%)",
                     fontSize: "12px",
                   }}
                 />
@@ -105,29 +100,28 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Bar chart */}
         <div className="glass-card p-6 opacity-0 animate-fade-up" style={{ animationDelay: "400ms", animationFillMode: "forwards" }}>
-          <h2 className="text-sm font-semibold font-display text-foreground mb-4 uppercase tracking-wider">Students per Course</h2>
+          <h2 className="text-sm font-semibold font-display text-foreground mb-4 uppercase tracking-wider">Students per Branch</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={barData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(215, 20%, 18%)" />
-                <XAxis dataKey="name" tick={{ fill: "hsl(215, 12%, 50%)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "hsl(215, 12%, 50%)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+                <XAxis dataKey="name" tick={{ fill: "hsl(220, 9%, 46%)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "hsl(220, 9%, 46%)", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{
-                    background: "hsl(215, 25%, 12%)",
-                    border: "1px solid hsl(215, 20%, 20%)",
+                    background: "hsl(0, 0%, 100%)",
+                    border: "1px solid hsl(220, 13%, 91%)",
                     borderRadius: "8px",
-                    color: "hsl(210, 20%, 90%)",
+                    color: "hsl(220, 15%, 15%)",
                     fontSize: "12px",
                   }}
                 />
                 <Bar dataKey="count" fill="url(#barGradient)" radius={[6, 6, 0, 0]} />
                 <defs>
                   <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(174, 72%, 46%)" />
-                    <stop offset="100%" stopColor="hsl(217, 91%, 60%)" />
+                    <stop offset="0%" stopColor="hsl(200, 80%, 44%)" />
+                    <stop offset="100%" stopColor="hsl(220, 70%, 50%)" />
                   </linearGradient>
                 </defs>
               </BarChart>
