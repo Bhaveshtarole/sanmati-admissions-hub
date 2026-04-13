@@ -1,51 +1,58 @@
-import { useState } from "react";
-import { Send, MessageSquare, Clock, Users } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Send, MessageSquare, Clock, Users, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useStudentStore } from "@/stores/studentStore";
+import api from "@/api/client";
+import type { CampaignResponse } from "@/api/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
 const RECIPIENT_GROUPS = [
   { value: "all", label: "All Students" },
   { value: "interested", label: "Interested Students" },
-  { value: "high_cet", label: "High CET Score Students (120+)" },
+  { value: "high_cet", label: "High Score Students (≥80%)" },
 ];
 
 const CampaignManager = () => {
-  const { students, campaigns, addCampaign } = useStudentStore();
   const [message, setMessage] = useState("");
   const [recipientGroup, setRecipientGroup] = useState("all");
+  const [campaigns, setCampaigns] = useState<CampaignResponse[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const getRecipientCount = () => {
-    if (recipientGroup === "all") return students.length;
-    if (recipientGroup === "interested") return students.filter((s) => s.status === "Interested").length;
-    if (recipientGroup === "high_cet") return students.filter((s) => s.cetScore >= 120).length;
-    return 0;
-  };
+  useEffect(() => {
+    setLoadingHistory(true);
+    api
+      .getCampaigns()
+      .then(setCampaigns)
+      .catch(() => setError("Failed to load campaign history. Is the backend running?"))
+      .finally(() => setLoadingHistory(false));
+  }, []);
 
   const handleSend = () => {
     if (!message.trim()) {
       toast.error("Please enter a message");
       return;
     }
-    const count = getRecipientCount();
-    if (count === 0) {
-      toast.error("No recipients in selected group");
-      return;
-    }
-    addCampaign({
-      message: message.trim(),
-      recipientGroup: RECIPIENT_GROUPS.find((g) => g.value === recipientGroup)?.label || recipientGroup,
-      recipientCount: count,
-    });
-    setMessage("");
-    toast.success(`Campaign queued for ${count} recipients`);
+    setSending(true);
+    api
+      .createCampaign(message.trim(), recipientGroup)
+      .then((newCampaign) => {
+        setCampaigns((prev) => [newCampaign, ...prev]);
+        setMessage("");
+        toast.success(`Campaign queued for ${newCampaign.recipient_count} recipients`);
+      })
+      .catch(() => toast.error("Failed to send campaign"))
+      .finally(() => setSending(false));
   };
 
   const selectClass =
     "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2";
+
+  const groupLabel = (group: string) =>
+    RECIPIENT_GROUPS.find((g) => g.value === group)?.label || group;
 
   return (
     <div className="space-y-8">
@@ -53,6 +60,13 @@ const CampaignManager = () => {
         <h1 className="text-2xl font-bold font-display text-foreground">Campaign Manager</h1>
         <p className="mt-1 text-sm text-muted-foreground">Send WhatsApp template messages to student groups</p>
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {error}
+        </div>
+      )}
 
       {/* Composer */}
       <div className="glass-card p-6 space-y-4 opacity-0 animate-fade-up" style={{ animationFillMode: "forwards" }}>
@@ -65,7 +79,7 @@ const CampaignManager = () => {
           <Textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Hello {{name}}, thank you for your interest in {{branch}} at Sanmati College. Your CET score of {{cet_score}} qualifies you for..."
+            placeholder="Hello {{name}}, thank you for your interest in {{branch}} at Sanmati College. Your score qualifies you for..."
             rows={5}
           />
         </div>
@@ -84,13 +98,17 @@ const CampaignManager = () => {
                 <Users className="h-4 w-4" />
                 Recipients
               </div>
-              <span className="text-lg font-bold tabular-nums text-foreground">{getRecipientCount()}</span>
+              <span className="text-xs text-muted-foreground italic">Counted on send</span>
             </div>
           </div>
         </div>
-        <Button onClick={handleSend} className="gap-1.5" disabled={!message.trim() || getRecipientCount() === 0}>
-          <Send className="h-3.5 w-3.5" />
-          Send WhatsApp Template
+        <Button
+          onClick={handleSend}
+          className="gap-1.5"
+          disabled={!message.trim() || sending}
+        >
+          {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+          {sending ? "Sending…" : "Send WhatsApp Template"}
         </Button>
       </div>
 
@@ -100,7 +118,12 @@ const CampaignManager = () => {
           <Clock className="h-4 w-4 text-primary" />
           Campaign History
         </h2>
-        {campaigns.length === 0 ? (
+        {loadingHistory ? (
+          <div className="glass-card flex items-center justify-center gap-2 p-12 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span className="text-sm">Loading campaigns…</span>
+          </div>
+        ) : campaigns.length === 0 ? (
           <div className="glass-card p-12 text-center">
             <MessageSquare className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">No campaigns sent yet</p>
@@ -116,11 +139,11 @@ const CampaignManager = () => {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-foreground line-clamp-2">{c.message}</p>
                   <div className="mt-1.5 flex items-center gap-3 text-xs text-muted-foreground">
-                    <span>{c.recipientGroup}</span>
+                    <span>{groupLabel(c.recipient_group)}</span>
                     <span>•</span>
-                    <span>{c.recipientCount} recipients</span>
+                    <span>{c.recipient_count} recipients</span>
                     <span>•</span>
-                    <span>{format(new Date(c.sentAt), "MMM d, yyyy h:mm a")}</span>
+                    <span>{format(new Date(c.sent_at), "MMM d, yyyy h:mm a")}</span>
                   </div>
                 </div>
               </div>

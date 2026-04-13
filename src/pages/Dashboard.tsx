@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
-import { Users, Flame, GraduationCap, TrendingUp } from "lucide-react";
+import {
+  PieChart, Pie, Cell, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
+} from "recharts";
+import { Users, Flame, GraduationCap, TrendingUp, RefreshCw, AlertCircle } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
-import { mockStats, mockStudents } from "@/data/mockData";
+import { mockStats } from "@/data/mockData";
+import api from "@/api/client";
 import type { Stats } from "@/api/client";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -23,12 +27,24 @@ const STATUS_LABELS: Record<string, string> = {
 
 const Dashboard = () => {
   const [stats, setStats] = useState<Stats>(mockStats);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStats = () => {
+    setLoading(true);
+    setError(null);
+    api
+      .getStats()
+      .then(setStats)
+      .catch(() => {
+        setError("Backend unreachable — showing demo data");
+        setStats(mockStats);
+      })
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    fetch("/api/stats")
-      .then((r) => r.ok ? r.json() : Promise.reject())
-      .then(setStats)
-      .catch(() => setStats(mockStats));
+    fetchStats();
   }, []);
 
   const pieData = Object.entries(stats.status_breakdown).map(([key, value]) => ({
@@ -37,19 +53,35 @@ const Dashboard = () => {
     color: STATUS_COLORS[key] || "#666",
   }));
 
-  const courseMap: Record<string, number> = {};
-  mockStudents.forEach((s) => {
-    const c = s.course_interest || "Unknown";
-    courseMap[c] = (courseMap[c] || 0) + 1;
-  });
-  const barData = Object.entries(courseMap).map(([name, count]) => ({ name, count }));
+  // Prefer live course_breakdown from API, fall back to empty
+  const barData = Object.entries(stats.course_breakdown || {}).map(([name, count]) => ({
+    name: name.replace("Engineering - ", "").replace(" Engineering", ""),
+    count,
+  }));
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold font-display text-foreground text-balance">Dashboard</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Admission pipeline overview</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold font-display text-foreground text-balance">Dashboard</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Admission pipeline overview</p>
+        </div>
+        <button
+          onClick={fetchStats}
+          disabled={loading}
+          className="flex items-center gap-1.5 rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+          Refresh
+        </button>
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Total Leads" value={stats.total_leads} icon={<Users className="h-5 w-5" />} delay={0} />
@@ -103,29 +135,37 @@ const Dashboard = () => {
         <div className="glass-card p-6 opacity-0 animate-fade-up" style={{ animationDelay: "400ms", animationFillMode: "forwards" }}>
           <h2 className="text-sm font-semibold font-display text-foreground mb-4 uppercase tracking-wider">Students per Branch</h2>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={barData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
-                <XAxis dataKey="name" tick={{ fill: "hsl(220, 9%, 46%)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "hsl(220, 9%, 46%)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(0, 0%, 100%)",
-                    border: "1px solid hsl(220, 13%, 91%)",
-                    borderRadius: "8px",
-                    color: "hsl(220, 15%, 15%)",
-                    fontSize: "12px",
-                  }}
-                />
-                <Bar dataKey="count" fill="url(#barGradient)" radius={[6, 6, 0, 0]} />
-                <defs>
-                  <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(200, 80%, 44%)" />
-                    <stop offset="100%" stopColor="hsl(220, 70%, 50%)" />
-                  </linearGradient>
-                </defs>
-              </BarChart>
-            </ResponsiveContainer>
+            {barData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={barData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+                  <XAxis dataKey="name" tick={{ fill: "hsl(220, 9%, 46%)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "hsl(220, 9%, 46%)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "hsl(0, 0%, 100%)",
+                      border: "1px solid hsl(220, 13%, 91%)",
+                      borderRadius: "8px",
+                      color: "hsl(220, 15%, 15%)",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Bar dataKey="count" fill="url(#barGradient)" radius={[6, 6, 0, 0]} />
+                  <defs>
+                    <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(200, 80%, 44%)" />
+                      <stop offset="100%" stopColor="hsl(220, 70%, 50%)" />
+                    </linearGradient>
+                  </defs>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                <p className="text-sm text-muted-foreground">
+                  {loading ? "Loading..." : "No course data yet"}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

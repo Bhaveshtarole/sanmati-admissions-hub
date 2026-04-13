@@ -1,10 +1,10 @@
-import { useState, useMemo } from "react";
-import { Search, Download, Filter } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Search, Download, Filter, Loader2, AlertCircle } from "lucide-react";
 import LeadTable from "@/components/dashboard/LeadTable";
-import { mockStudents } from "@/data/mockData";
 import type { StudentSummary } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import api from "@/api/client";
+import { useDebounce } from "@/hooks/useDebounce";
 
 const statuses = [
   { value: "", label: "All Statuses" },
@@ -15,34 +15,67 @@ const statuses = [
   { value: "not_interested", label: "Not Interested" },
 ];
 
-const courses = ["", "Computer Science", "Mechanical", "Civil", "Electrical", "Electronics & Comm.", "Information Technology"];
+const courses = [
+  "",
+  "Engineering - CSE",
+  "Engineering - ME",
+  "Engineering - CE",
+  "Engineering - EE",
+  "Engineering - AI&DS",
+  "ITI - Fitter",
+  "ITI - Electrician",
+  "ITI - COPA",
+  "Nursing - B.Sc",
+  "Nursing - GNM",
+  "Nursing - ANM",
+];
 
 const Leads = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [courseFilter, setCourseFilter] = useState("");
   const [hotOnly, setHotOnly] = useState(false);
-  const [students] = useState<StudentSummary[]>(mockStudents);
+  const [students, setStudents] = useState<StudentSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
-  const filtered = useMemo(() => {
-    return students.filter((s) => {
-      if (statusFilter && s.lead_status !== statusFilter) return false;
-      if (courseFilter && s.course_interest !== courseFilter) return false;
-      if (hotOnly && !s.is_hot_lead) return false;
-      if (search) {
-        const q = search.toLowerCase();
-        if (!s.name.toLowerCase().includes(q) && !s.phone.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [students, search, statusFilter, courseFilter, hotOnly]);
+  const debouncedSearch = useDebounce(search, 400);
+
+  const fetchStudents = useCallback(() => {
+    setLoading(true);
+    setError(null);
+
+    const params: Record<string, string | number | boolean> = { page, limit: 50 };
+    if (statusFilter) params.status = statusFilter;
+    if (courseFilter) params.course = courseFilter;
+    if (hotOnly) params.is_hot_lead = true;
+    if (debouncedSearch) params.search = debouncedSearch;
+
+    api
+      .getStudents(params)
+      .then(setStudents)
+      .catch(() => setError("Failed to load students. Is the backend running?"))
+      .finally(() => setLoading(false));
+  }, [statusFilter, courseFilter, hotOnly, debouncedSearch, page]);
+
+  useEffect(() => {
+    fetchStudents();
+  }, [fetchStudents]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, courseFilter, hotOnly, debouncedSearch]);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-display text-foreground">Leads</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{filtered.length} students found</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {loading ? "Loading..." : `${students.length} students found`}
+          </p>
         </div>
         <Button
           variant="outline"
@@ -99,7 +132,35 @@ const Leads = () => {
         </button>
       </div>
 
-      <LeadTable students={filtered} />
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="glass-card flex items-center justify-center gap-2 p-16 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span className="text-sm">Loading students…</span>
+        </div>
+      ) : (
+        <>
+          <LeadTable students={students} />
+          {students.length === 50 && (
+            <div className="flex justify-center gap-2">
+              {page > 1 && (
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => p - 1)}>
+                  ← Previous
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)}>
+                Next →
+              </Button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };

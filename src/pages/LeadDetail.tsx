@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Phone, BookOpen, TrendingUp, MessageSquare, StickyNote } from "lucide-react";
-import { mockStudentDetail } from "@/data/mockData";
+import {
+  ArrowLeft, Phone, BookOpen, TrendingUp,
+  MessageSquare, StickyNote, Loader2, AlertCircle,
+} from "lucide-react";
 import type { StudentDetail as StudentDetailType, Note } from "@/api/client";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import HotLeadBadge from "@/components/dashboard/HotLeadBadge";
@@ -9,6 +11,8 @@ import ChatBubble from "@/components/dashboard/ChatBubble";
 import NoteCard from "@/components/dashboard/NoteCard";
 import NoteForm from "@/components/dashboard/NoteForm";
 import { Button } from "@/components/ui/button";
+import api from "@/api/client";
+import { toast } from "sonner";
 
 const STATUSES = ["new", "in_progress", "visit_scheduled", "admitted", "not_interested"];
 
@@ -17,26 +21,67 @@ const LeadDetail = () => {
   const navigate = useNavigate();
   const studentId = Number(id);
 
-  const [student, setStudent] = useState<StudentDetailType>(() => mockStudentDetail(studentId));
-  const [status, setStatus] = useState(student.lead_status);
+  const [student, setStudent] = useState<StudentDetailType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [statusSaving, setStatusSaving] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    api
+      .getStudent(studentId)
+      .then(setStudent)
+      .catch(() => setError("Failed to load student. Is the backend running?"))
+      .finally(() => setLoading(false));
+  }, [studentId]);
 
   const handleStatusChange = (newStatus: string) => {
-    setStatus(newStatus);
-    setStudent((prev) => ({ ...prev, lead_status: newStatus }));
-    // In production: api.updateStatus(studentId, newStatus)
+    if (!student) return;
+    setStatusSaving(true);
+    api
+      .updateStatus(studentId, newStatus)
+      .then(() => {
+        setStudent((prev) => prev ? { ...prev, lead_status: newStatus } : prev);
+        toast.success("Status updated");
+      })
+      .catch(() => toast.error("Failed to update status"))
+      .finally(() => setStatusSaving(false));
   };
 
   const handleAddNote = (content: string, counselorName: string) => {
-    const newNote: Note = {
-      id: Date.now(),
-      student_id: studentId,
-      content,
-      counselor_name: counselorName,
-      created_at: new Date().toISOString(),
-    };
-    setStudent((prev) => ({ ...prev, notes: [newNote, ...prev.notes] }));
-    // In production: api.addNote(studentId, content, counselorName)
+    api
+      .addNote(studentId, content, counselorName)
+      .then((newNote: Note) => {
+        setStudent((prev) =>
+          prev ? { ...prev, notes: [newNote, ...prev.notes] } : prev
+        );
+        toast.success("Note added");
+      })
+      .catch(() => toast.error("Failed to add note"));
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-24 text-muted-foreground">
+        <Loader2 className="h-6 w-6 animate-spin" />
+        <span className="text-sm">Loading student…</span>
+      </div>
+    );
+  }
+
+  if (error || !student) {
+    return (
+      <div className="space-y-4">
+        <Button variant="ghost" size="icon" onClick={() => navigate("/leads")}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {error || "Student not found"}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -51,7 +96,7 @@ const LeadDetail = () => {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold font-display text-foreground">{student.name}</h1>
+          <h1 className="text-2xl font-bold font-display text-foreground">{student.name || student.phone}</h1>
           <p className="text-sm text-muted-foreground">Lead #{student.id}</p>
         </div>
       </div>
@@ -82,9 +127,10 @@ const LeadDetail = () => {
           <div className="space-y-2 pt-2 border-t border-border/50">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</label>
             <select
-              value={status}
+              value={student.lead_status}
               onChange={(e) => handleStatusChange(e.target.value)}
-              className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+              disabled={statusSaving}
+              className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 disabled:opacity-60"
             >
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -92,7 +138,7 @@ const LeadDetail = () => {
                 </option>
               ))}
             </select>
-            <StatusBadge status={status} />
+            <StatusBadge status={student.lead_status} />
           </div>
         </div>
 
@@ -107,8 +153,8 @@ const LeadDetail = () => {
               student.interactions.map((interaction) => (
                 <ChatBubble
                   key={interaction.id}
-                  message={interaction.message}
-                  response={interaction.response}
+                  message={interaction.message ?? ""}
+                  response={interaction.response ?? ""}
                   timestamp={interaction.timestamp}
                 />
               ))

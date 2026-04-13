@@ -3,10 +3,10 @@ import { Upload, FileSpreadsheet, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
-import type { ManagedStudent } from "@/types/student";
+import type { StudentCreate } from "@/api/client";
 
 interface FileUploadProps {
-  onUpload: (students: Omit<ManagedStudent, "id" | "createdAt">[]) => void;
+  onUpload: (students: StudentCreate[]) => void;
 }
 
 interface PreviewRow {
@@ -83,12 +83,12 @@ const FileUpload = ({ onUpload }: FileUploadProps) => {
   };
 
   const confirmUpload = () => {
-    const mapped = preview.map((r) => ({
+    const mapped: StudentCreate[] = preview.map((r) => ({
       name: r.name,
       phone: r.phone,
-      cetScore: r.cetScore,
-      branch: r.branch,
-      status: "Not Contacted" as const,
+      course_interest: r.branch,
+      lead_status: "new",
+      lead_score: r.cetScore ? Math.round((r.cetScore / 200) * 100) : 0,
     }));
     onUpload(mapped);
     setPreview([]);

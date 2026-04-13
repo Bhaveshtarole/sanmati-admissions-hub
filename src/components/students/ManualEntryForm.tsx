@@ -3,30 +3,50 @@ import { UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { ManagedStudent } from "@/types/student";
-import { toast } from "sonner";
+import type { StudentCreate } from "@/api/client";
 
 interface ManualEntryFormProps {
-  onAdd: (student: Omit<ManagedStudent, "id" | "createdAt">) => void;
+  onAdd: (student: StudentCreate) => void;
 }
 
-const BRANCHES = ["Computer Science", "Mechanical", "Civil", "Electrical"];
-const STATUSES: ManagedStudent["status"][] = ["Interested", "Not Contacted", "Follow Up"];
+const BRANCHES = [
+  "Engineering - CSE",
+  "Engineering - ME",
+  "Engineering - CE",
+  "Engineering - EE",
+  "Engineering - AI&DS",
+  "ITI - Fitter",
+  "ITI - Electrician",
+  "ITI - COPA",
+  "Nursing - B.Sc",
+  "Nursing - GNM",
+  "Nursing - ANM",
+];
+
+const LEAD_STATUSES = [
+  { value: "new", label: "New" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "visit_scheduled", label: "Visit Scheduled" },
+  { value: "admitted", label: "Admitted" },
+  { value: "not_interested", label: "Not Interested" },
+];
 
 const ManualEntryForm = ({ onAdd }: ManualEntryFormProps) => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [cetScore, setCetScore] = useState("");
   const [branch, setBranch] = useState(BRANCHES[0]);
-  const [status, setStatus] = useState<ManagedStudent["status"]>("Not Contacted");
+  const [status, setStatus] = useState("new");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!name.trim()) errs.name = "Name is required";
     if (!phone.trim()) errs.phone = "Phone is required";
-    else if (!/^[+]?\d{10,13}$/.test(phone.replace(/\s/g, ""))) errs.phone = "Enter a valid 10-13 digit phone number";
-    if (cetScore && (Number(cetScore) < 0 || Number(cetScore) > 200)) errs.cetScore = "CET score must be 0-200";
+    else if (!/^[+]?\d{10,13}$/.test(phone.replace(/\s/g, "")))
+      errs.phone = "Enter a valid 10-13 digit phone number";
+    if (cetScore && (Number(cetScore) < 0 || Number(cetScore) > 200))
+      errs.cetScore = "CET score must be 0-200";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -34,20 +54,21 @@ const ManualEntryForm = ({ onAdd }: ManualEntryFormProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    // Convert CET score (0-200) to lead_score (0-100) proportionally
+    const leadScore = cetScore ? Math.round((Number(cetScore) / 200) * 100) : 0;
     onAdd({
       name: name.trim(),
       phone: phone.trim(),
-      cetScore: Number(cetScore) || 0,
-      branch,
-      status,
+      course_interest: branch,
+      lead_status: status,
+      lead_score: leadScore,
     });
     setName("");
     setPhone("");
     setCetScore("");
     setBranch(BRANCHES[0]);
-    setStatus("Not Contacted");
+    setStatus("new");
     setErrors({});
-    toast.success("Student added successfully");
   };
 
   const selectClass =
@@ -68,8 +89,16 @@ const ManualEntryForm = ({ onAdd }: ManualEntryFormProps) => {
           {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="cet">CET Score</Label>
-          <Input id="cet" type="number" min={0} max={200} value={cetScore} onChange={(e) => setCetScore(e.target.value)} placeholder="0-200" />
+          <Label htmlFor="cet">CET Score (0-200)</Label>
+          <Input
+            id="cet"
+            type="number"
+            min={0}
+            max={200}
+            value={cetScore}
+            onChange={(e) => setCetScore(e.target.value)}
+            placeholder="0-200"
+          />
           {errors.cetScore && <p className="text-xs text-destructive">{errors.cetScore}</p>}
         </div>
         <div className="space-y-1.5">
@@ -82,9 +111,9 @@ const ManualEntryForm = ({ onAdd }: ManualEntryFormProps) => {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="status">Status</Label>
-          <select id="status" value={status} onChange={(e) => setStatus(e.target.value as ManagedStudent["status"])} className={selectClass}>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>{s}</option>
+          <select id="status" value={status} onChange={(e) => setStatus(e.target.value)} className={selectClass}>
+            {LEAD_STATUSES.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
         </div>
