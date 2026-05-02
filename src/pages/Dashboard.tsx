@@ -47,7 +47,7 @@ const Dashboard = () => {
     fetchStats();
   }, []);
 
-  const pieData = Object.entries(stats.status_breakdown).map(([key, value]) => ({
+  const pieData = Object.entries(stats?.status_breakdown || {}).map(([key, value]) => ({
     name: STATUS_LABELS[key] || key,
     value,
     color: STATUS_COLORS[key] || "#666",
